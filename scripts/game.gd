@@ -4,26 +4,39 @@ extends Node2D
 
 @export var cell_scene: PackedScene
 
-var rows: int = 15 # 480 / 32
-var cols: int = 20 # 640 / 32
-var cell_width = 32
+
+var cell_width = 64
+
+var cell_scale: float = float(cell_width) / float(32)
+var rows: int = 480 / cell_width
+var cols: int = 640 / cell_width
 
 var cell_matrix: Array = []
 var prev_cell_states: Array = []
 
+var is_full = false
 
-func _input(event: InputEvent) -> void:
+func _input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed("confirm"):
+		if $CanvasLayer.visible:
+			$CanvasLayer.hide()
+		if is_full:
+			clear_board()
 		set_game()
+		game()
 
 
 func clear_board() -> void:
-	cell_matrix.resize(0)
-	prev_cell_states.resize(0)
+	for col in range(cols):
+		for row in range(rows):
+			cell_matrix[col][row].queue_free()
+	cell_matrix.clear()
+	prev_cell_states.clear()
+	is_full = false
 
 
 func set_game() -> void:
-	clear_board()
+	var rng = RandomNumberGenerator.new()
 	
 	for col in range(cols):
 		cell_matrix.append([])
@@ -34,9 +47,10 @@ func set_game() -> void:
 			var cell = cell_scene.instantiate()
 			self.add_child(cell)
 			
-			cell.position = Vector2(col * cell_width + 16, row * cell_width + 16)
+			cell.position = Vector2(col * cell_width + cell_width / 2, row * cell_width + cell_width / 2)
+			cell.scale = Vector2(cell_scale, cell_scale)
 			
-			if !randi() % 2 or is_edge(col, row):
+			if !rng.randi() % 2 or is_edge(col, row):
 				cell.visible = false
 				prev_cell_states[col].push_back(false)
 			else:
@@ -44,26 +58,27 @@ func set_game() -> void:
 			
 			cell_matrix[col][row] = cell
 	
-	game()
+	is_full = true
 
 
 func game() -> void:
-	for col in range(cols):
-		for row in range(rows):
-			if cell_matrix[col][row].visible:
-				prev_cell_states[col][row] = true
-			else:
-				prev_cell_states[col][row] = false
-	
-	for col in range(cols):
-		for row in range(rows):
-			if !is_edge(col, row):
-				cell_matrix[col][row].visible = get_next_state(col, row)
-	
-	timer.start()
-	await timer.timeout
-	
-	game()
+	if is_full:
+		for col in range(cols):
+			for row in range(rows):
+				if cell_matrix[col][row].visible:
+					prev_cell_states[col][row] = true
+				else:
+					prev_cell_states[col][row] = false
+		
+		for col in range(cols):
+			for row in range(rows):
+				if !is_edge(col, row):
+					cell_matrix[col][row].visible = get_next_state(col, row)
+		
+		timer.start()
+		await timer.timeout
+		
+		game()
 
 
 func is_edge(col: int, row: int) -> bool:
