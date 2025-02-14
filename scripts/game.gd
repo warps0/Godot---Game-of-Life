@@ -5,11 +5,11 @@ extends Node2D
 @export var cell_scene: PackedScene
 
 
-var cell_width = 64
+var cell_width = 8
 
 var cell_scale: float = float(cell_width) / float(32)
-var rows: int = 480 / cell_width
-var cols: int = 640 / cell_width
+var rows: int = 480 / cell_width + 1
+var cols: int = 640 / cell_width + 1
 
 var cell_matrix: Array = []
 var prev_cell_states: Array = []
@@ -47,7 +47,7 @@ func set_game() -> void:
 			var cell = cell_scene.instantiate()
 			self.add_child(cell)
 			
-			cell.position = Vector2(col * cell_width + cell_width / 2, row * cell_width + cell_width / 2)
+			cell.position = Vector2(col * cell_width, row * cell_width)
 			cell.scale = Vector2(cell_scale, cell_scale)
 			
 			if !rng.randi() % 2 or is_edge(col, row):
